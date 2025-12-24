@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        .reset-btn {
+            padding: 10px 20px;
+            background: #334155;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: #475569;
+        }
+
+        .info-box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h2 {
+            color: #60a5fa;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .key-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .key-info-item {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .key-info-label {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .key-info-value {
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .keyboard {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 5px;
+            justify-content: center;
+        }
+
+        .key {
+            min-width: 50px;
+            padding: 15px 10px;
+            background: #334155;
+            border: 2px solid #475569;
+            border-radius: 6px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 14px;
+            transition: all 0.1s;
+            cursor: default;
+            position: relative;
+        }
+
+        .key.pressed {
+            background: #3b82f6;
+            border-color: #60a5fa;
+            transform: scale(0.95);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .key.space {
+            flex-grow: 1;
+        }
+
+        .key.wide {
+            min-width: 80px;
+        }
+
+        .key-count {
+            position: absolute;
+            bottom: 2px;
+            right: 5px;
+            font-size: 10px;
+            color: #94a3b8;
+        }
+
+        .pressed-keys {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 50px;
+            align-items: center;
+        }
+
+        .pressed-key-badge {
+            padding: 8px 15px;
+            background: #3b82f6;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .empty-state {
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .instructions {
+            text-align: center;
+            color: #94a3b8;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⌨️ Keyboard Tester</h1>
+            <button class="reset-btn" onclick="resetAll()">Reset Stats</button>
+        </div>
+
+        <div id="lastKeyInfo" class="info-box" style="display: none;">
+            <h2>Last Key Pressed</h2>
+            <div class="key-info">
+                <div class="key-info-item">
+                    <div class="key-info-label">Key</div>
+                    <div class="key-info-value" id="lastKey">-</div>
+                </div>
+                <div class="key-info-item">
+                    <div class="key-info-label">Code</div>
+                    <div class="key-info-value" id="lastCode">-</div>
+                </div>
+                <div class="key-info-item">
+                    <div class="key-info-label">Key Code</div>
+                    <div class="key-info-value" id="lastKeyCode">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="keyboard">
+            <h2>Keyboard Layout</h2>
+            <div id="keyboard"></div>
+            <div class="instructions">Press any key to test it. Numbers show how many times pressed.</div>
+        </div>
+
+        <div class="info-box">
+            <h2>Currently Pressed</h2>
+            <div class="pressed-keys" id="pressedKeys">
+                <span class="empty-state">No keys pressed</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var pressedKeys = new Set();
+        var keyStats = {};
+
+        var keyboardLayout = [
+            ['Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'],
+            ['Backquote', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus', 'Equal', 'Backspace'],
+            ['Tab', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'BracketLeft', 'BracketRight', 'Backslash'],
+            ['CapsLock', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Semicolon', 'Quote', 'Enter'],
+            ['ShiftLeft', 'KeyZ', 'KeyX', 'KeyC', 'KeyV', 'KeyB', 'KeyN', 'KeyM', 'Comma', 'Period', 'Slash', 'ShiftRight'],
+            ['ControlLeft', 'AltLeft', 'MetaLeft', 'Space', 'MetaRight', 'AltRight', 'ControlRight']
+        ];
+
+        var keyLabels = {
+            'Backquote': '`', 'Digit1': '1', 'Digit2': '2', 'Digit3': '3', 'Digit4': '4',
+            'Digit5': '5', 'Digit6': '6', 'Digit7': '7', 'Digit8': '8', 'Digit9': '9',
+            'Digit0': '0', 'Minus': '-', 'Equal': '=', 'Backspace': 'Backspace',
+            'Tab': 'Tab', 'CapsLock': 'Caps', 'Enter': 'Enter', 'ShiftLeft': 'Shift',
+            'ShiftRight': 'Shift', 'ControlLeft': 'Ctrl', 'ControlRight': 'Ctrl',
+            'AltLeft': 'Alt', 'AltRight': 'Alt', 'MetaLeft': 'Win', 'MetaRight': 'Win',
+            'Space': 'Space', 'Escape': 'Esc', 'BracketLeft': '[', 'BracketRight': ']',
+            'Backslash': '\\', 'Semicolon': ';', 'Quote': "'", 'Comma': ',',
+            'Period': '.', 'Slash': '/'
+        };
+
+        function getKeyLabel(code) {
+            if (keyLabels[code]) {
+                return keyLabels[code];
+            }
+            if (code.startsWith('Key')) {
+                return code.substring(3);
+            }
+            if (code.startsWith('F')) {
+                return code;
+            }
+            return code;
+        }
+
+        function buildKeyboard() {
+            var kb = document.getElementById('keyboard');
+            kb.innerHTML = '';
+
+            for (var i = 0; i < keyboardLayout.length; i++) {
+                var row = document.createElement('div');
+                row.className = 'keyboard-row';
+
+                for (var j = 0; j < keyboardLayout[i].length; j++) {
+                    var keyCode = keyboardLayout[i][j];
+                    var key = document.createElement('div');
+                    key.className = 'key';
+                    key.id = 'key-' + keyCode;
+
+                    if (keyCode === 'Space') {
+                        key.className += ' space';
+                    }
+                    if (['Backspace', 'Tab', 'CapsLock', 'Enter', 'ShiftLeft', 'ShiftRight'].indexOf(keyCode) !== -1) {
+                        key.className += ' wide';
+                    }
+
+                    key.innerHTML = '<div>' + getKeyLabel(keyCode) + '</div><div class="key-count" id="count-' + keyCode + '"></div>';
+                    row.appendChild(key);
+                }
+
+                kb.appendChild(row);
+            }
+        }
+
+        function updatePressedDisplay() {
+            var container = document.getElementById('pressedKeys');
+            container.innerHTML = '';
+
+            if (pressedKeys.size === 0) {
+                container.innerHTML = '<span class="empty-state">No keys pressed</span>';
+            } else {
+                pressedKeys.forEach(function(key) {
+                    var badge = document.createElement('span');
+                    badge.className = 'pressed-key-badge';
+                    badge.textContent = getKeyLabel(key);
+                    container.appendChild(badge);
+                });
+            }
+        }
+
+        function handleKeyDown(e) {
+            e.preventDefault();
+            var code = e.code || e.key;
+
+            pressedKeys.add(code);
+            keyStats[code] = (keyStats[code] || 0) + 1;
+
+            document.getElementById('lastKeyInfo').style.display = 'block';
+            document.getElementById('lastKey').textContent = e.key;
+            document.getElementById('lastCode').textContent = e.code;
+            document.getElementById('lastKeyCode').textContent = e.keyCode;
+
+            var keyEl = document.getElementById('key-' + code);
+            if (keyEl) {
+                keyEl.classList.add('pressed');
+                var countEl = document.getElementById('count-' + code);
+                if (countEl) {
+                    countEl.textContent = keyStats[code];
+                }
+            }
+
+            updatePressedDisplay();
+        }
+
+        function handleKeyUp(e) {
+            e.preventDefault();
+            var code = e.code || e.key;
+
+            pressedKeys.delete(code);
+
+            var keyEl = document.getElementById('key-' + code);
+            if (keyEl) {
+                keyEl.classList.remove('pressed');
+            }
+
+            updatePressedDisplay();
+        }
+
+        function resetAll() {
+            keyStats = {};
+            var counts = document.querySelectorAll('.key-count');
+            for (var i = 0; i < counts.length; i++) {
+                counts[i].textContent = '';
+            }
+            document.getElementById('lastKeyInfo').style.display = 'none';
+        }
+
+        buildKeyboard();
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+    </script>
+</body>
+</html>
