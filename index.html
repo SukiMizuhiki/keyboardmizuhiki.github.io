@@ -621,6 +621,8 @@
         }
 
         function handleKeyDown(e) {
+            e.preventDefault();
+            e.stopPropagation();
             var code = e.code || e.key;
 
             if (!pressedKeys.has(code)) {
@@ -661,6 +663,8 @@
         }
 
         function handleKeyUp(e) {
+            e.preventDefault();
+            e.stopPropagation();
             var code = e.code || e.key;
             pressedKeys.delete(code);
 
@@ -740,8 +744,25 @@
         }
 
         buildKeyboard();
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('keydown', handleKeyDown, true);
+        window.addEventListener('keyup', handleKeyUp, true);
+        
+        // Prevent default behaviors for common shortcuts
+        window.addEventListener('keydown', function(e) {
+            // Prevent browser shortcuts like Ctrl+S, Ctrl+P, etc.
+            if ((e.ctrlKey || e.metaKey) && ['s', 'p', 'o', 'f', 'g', 'h', 'j', 'k', 'l', 'n', 't', 'w', 'r', 'd'].indexOf(e.key.toLowerCase()) !== -1) {
+                e.preventDefault();
+            }
+            // Prevent F-key defaults
+            if (e.key.startsWith('F') && e.key.length <= 3) {
+                e.preventDefault();
+            }
+            // Prevent Alt shortcuts
+            if (e.altKey) {
+                e.preventDefault();
+            }
+        }, true);
+        
         setInterval(updateStats, 1000);
     </script>
 </body>
